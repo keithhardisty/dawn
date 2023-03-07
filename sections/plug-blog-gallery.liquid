@@ -1,0 +1,645 @@
+{% paginate blog.articles by 15 %}
+<section class="plug-blog-gallery" data-blog-size="{{ blog.articles_count }}">
+  <div class="blog-gallery section__wrapper section">
+    <div class="blog-gallery__header">
+      <h1 class="page__title title">{{ blog.title }}</h1>
+      <div class="heading-divider heading-divider--short"></div>
+      <div class="blog-gallery__subheader">{{ blog.metafields.custom_fields["description"] }}</div>
+    </div>
+    <div class="blog-gallery__content">
+      <div class="blog-gallery__filters">
+        <span class="blog-gallery__filters-heading">Filter:</span>
+        <div class="blog-gallery__filter" data-filter="products">
+          <p class="blog-gallery__filter-options-heading">Products {% include 'icon-chevron' %}</p>
+          <!-- <p class="blog-gallery__filter-options-heading blog-gallery__filter-options-heading--sub">Products</p> -->
+          <div class="blog-gallery__filter-options">
+            <p class="blog-gallery__clear" data-clear-trigger>Clear All</p>
+          </div>
+        </div>
+        <div class="blog-gallery__filter blog-gallery__filter--color" data-filter="colors">
+          <p class="blog-gallery__filter-options-heading">Colors {% include 'icon-chevron' %}</p>
+          <!-- <p class="blog-gallery__filter-options-heading blog-gallery__filter-options-heading--sub">Colors</p> -->
+          <div class="blog-gallery__filter-options">
+            <p class="blog-gallery__clear" data-clear-trigger>Clear All</p>
+          </div>
+        </div>
+        <div class="blog-gallery__filter" data-filter="species">
+          <p class="blog-gallery__filter-options-heading">Species {% include 'icon-chevron' %}</p>
+          <div class="blog-gallery__filter-options">
+            <p class="blog-gallery__clear" data-clear-trigger>Clear All</p>
+          </div>
+        </div>
+        <div class="blog-gallery__filter blog-gallery__filter--category" data-filter="category">
+          <p class="blog-gallery__filter-options-heading">Category {% include 'icon-chevron' %}</p>
+          <div class="blog-gallery__filter-options">
+            <p class="blog-gallery__clear" data-clear-trigger>Clear All</p>
+          </div>
+        </div>
+        <a href="/pages/project-submission">Submit a project</a>
+      </div>
+      <div class="blog-gallery__gallery">
+        <div class="gallery-grid" data-gallery-grid>
+          {% include 'plug-article-cards' %}
+          <button class="gallery-grid__load-more" data-next-page="{{ paginate.next.url }}&view=cards">Load More<span>{% include 'icon-arrow-down' %}</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endpaginate %}
+
+<script type="text/template" data-blog-template>
+    <div class="gallery-card">
+        <a href="{url}">
+            <img src="{image}">
+            <h2>{title}</h2>
+            <div class="gallery-card__location">
+                {location}
+            </div>
+        </a>
+    </div>
+</script>
+
+<script>
+    $(document).ready(function() {
+        function getNextPage() {
+            $('[data-next-page]').click(function() {
+                var $this = $(this);
+                // var currentPage = $(this).attr('data-current-page');
+                var nextPage = $(this).attr('data-next-page');
+                $.ajax({
+                    url: window.location.origin + nextPage,
+                    cache: false,
+                    dataType: 'html',
+                    success: function success(response) {
+                        $this.remove();
+                        $('[data-gallery-grid]').append(response);
+                        getNextPage();
+                    },
+                    error: function error(e) {
+                         console.log(e);
+                    }
+                });
+            });
+        }
+        getNextPage();
+        const blogItemTemplate = $('[data-blog-template]').html();
+        
+        var time = 0;
+        setInterval(function(){time+= 100; }, 100);
+        var blogLength = $('[data-blog-size]').attr('data-blog-size');
+        var maxItemPerPage = 10;
+        var pagesLength = Math.ceil(blogLength / maxItemPerPage);
+        var getArticlesResponses = {};
+        var getArticlesXhrs = [];
+        for (var i = 1; i <= pagesLength; i++) {
+            getArticles(i);
+        }
+        function isJSON(str) {
+            try {
+                return (JSON.parse(str) && !!str);
+            } catch (e) {
+                return false;
+            }
+        }
+        function getArticles(page) {
+            var getArticlesXhr = $.ajax({
+                url: "/blogs/gallery?view=ajax&page=" + page,
+                success: function success(response) {
+                    if(isJSON(response)) {
+                      var responseJson = JSON.parse(response);
+                    getArticlesResponses[page] = responseJson;
+                    }
+                },
+                error: function error(e) {
+                    // console.log('ajax error');
+                    // console.log(e);
+                }
+            });
+            getArticlesXhrs.push(getArticlesXhr);
+        }
+
+        $.when.apply($, getArticlesXhrs).then(function() {
+            // console.log('all articles done');
+            var products = [];
+            var categories = [];
+            var species = [];
+            var colorFamilyList = [];
+            var colorFamilies = [];
+            var productColors = [];
+            var productColorsList = [];
+            var allArticles = [];
+            function resetFilters() {
+                $('[data-filter]').find('.blog-gallery__filter-options').empty();
+                $('[data-filter]').find('.blog-gallery__filter-options').append('<p class="blog-gallery__clear" data-clear-trigger>Clear All</p>');
+                products = [];
+                categories = [];
+                species = [];
+                colorFamilies = [];
+                colorFamilyList = [];
+                productColors = [];
+                productColorsList = [];
+            }
+            function getFilters(articles, selectedFilters, page) {
+                // console.log('SELECTED FILTERS');
+                // console.log(selectedFilters);
+                if (!articles) {
+                    articles = getArticlesResponses[page].articles;
+                }
+                function isExisting(value) {
+                    for (var i = 0; i < colors.length; i++) {
+                        if (colors[i].handle == value.handle) {
+                            return true;
+                        }
+                    }
+                }
+                for (let i = 0; i < articles.length; i++) {
+                    if (articles[i].products) {
+                        for (let j = 0; j < articles[i].products.length; j++ ) {
+                            if (!products.some(product => product.handle === articles[i].products[j].handle)) {
+                                if (articles[i].products[j].handle != '') {
+                                    products.push(articles[i].products[j]);
+                                }
+                            }
+                            if (articles[i].products[j].family && articles[i].products[j].family != '' && !colorFamilyList.includes(articles[i].products[j].family)) {
+                                // $('[data-filter="colors"]').find('.blog-gallery__filter-options')
+                                //     .append(
+                                //             '<div class="blog-gallery__filter-option-group">'
+                                //         +   '<img class="blog-gallery__filter-option-group-img blog-gallery__filter-option-group-img--family" src="'
+                                //         +   articles[i].products[j].familyImage
+                                //         +   '">'
+                                //         +   '<span>' + articles[i].products[j].family + '</span>'
+                                //         +   '<i class="fas fa-chevron-right"></i>'
+                                //         +   '<div class="blog-gallery__filter-option-dropdown" data-color-family-dropdown="'
+                                //         +   articles[i].products[j].family
+                                //         +   '">'
+                                //         +   '</div>'
+                                //         +   '</div>'
+                                //     );
+                                var obj = {};
+                                obj["name"] = articles[i].products[j].family;
+                                obj["image"] = articles[i].products[j].familyImage;
+                                colorFamilies.push(obj);
+                                colorFamilyList.push(articles[i].products[j].family);
+                                // console.log(colorFamilyList)
+                            }
+                        }
+                    }
+                    
+                    if (articles[i].products) {
+                        for (let j = 0; j < articles[i].products.length; j++ ) {
+                            if (articles[i].products[j].color && articles[i].products[j].color != '' && !productColorsList.includes(articles[i].products[j].color)) {
+                                var initials = 
+                                    articles[i].products[j].handle.includes('oil-plus') ? 'OP2C' :
+                                    articles[i].products[j].handle.includes('hybrid-wood-protector') ? 'HWP' :
+                                	articles[i].products[j].handle.includes('woodcream') ? 'WC' :
+                                    articles[i].products[j].handle.includes('pre-aging') ? 'PA' :
+                                    articles[i].products[j].handle.includes('universal-maintenance-oil') ? 'UMO' :
+                                    articles[i].products[j].handle.includes('fumed') ? 'Fumed' :
+                                    articles[i].products[j].handle.includes('fumed') ? 'Fumed' :
+                                    articles[i].products[j].handle.includes('smoke') ? 'Smoke' :
+                                    articles[i].products[j].handle.includes('precolor-easy') ? 'PCE' :  articles[i].products[j].handle;
+
+                                // $('[data-color-family-dropdown="' + articles[i].products[j].family + '"')
+                                //         .append(
+                                //                 '<div class="blog-gallery__filter-option">'
+                                //             +   '<input data-filter-trigger data-product="'
+                                //             +   articles[i].products[j].handle
+                                //             +   '" type="checkbox" id="'
+                                //             +   articles[i].products[j].color
+                                //             +   '" value="'
+                                //             +   articles[i].products[j].color
+                                //             +   '">'
+                                //             +   '<label for="'
+                                //             +   articles[i].products[j].color
+                                //             +   '">'
+                                //             +   '<img src="'
+                                //             +   articles[i].products[j].familyColorImage
+                                //             +   '">'
+                                //             +   '<p>'
+                                //             +   initials
+                                //             +   '</p>'
+                                //             +   '<p><b>'
+                                //             +   articles[i].products[j].familyColor
+                                //             +   '</b></p>'
+                                //             +   '</label>'
+                                //             +   '</div>'
+                                // );
+                                var obj = {};
+                                obj["handle"] = articles[i].products[j].handle;
+                                obj["name"] = articles[i].products[j].color;
+                                obj["family"] = articles[i].products[j].family ? articles[i].products[j].family: '';
+                                obj["familyColorImage"] = articles[i].products[j].familyColorImage ? articles[i].products[j].familyColorImage: '';
+                                obj["familyColor"] = articles[i].products[j].familyColor ? articles[i].products[j].familyColor: '';
+                                productColors.push(obj);
+                                productColorsList.push(articles[i].products[j].color);
+                            }
+                        }
+                    }
+                    if (articles[i].categories) {
+                        for (let j = 0; j < articles[i].categories.length; j++ ) {
+                            if (!categories.includes(articles[i].categories[j])) {
+                                categories.push(articles[i].categories[j]);
+                            }
+                        }
+                    }
+                    if (articles[i].species) {
+                        // console.log(species);
+                        for (let j = 0; j < articles[i].species.length; j++ ) {
+                            if (!species.includes(articles[i].species[j]) && articles[i].species[j] != ''  && articles[i].species[j] != null && !species.includes(articles[i].species[j])) {
+                                // console.log(articles[i].species[j]);
+                                species.push(articles[i].species[j]);
+                            }
+                        }
+                    }
+                    // console.log(time);
+                }
+            }
+            function initFilter(selectedFilters, selectedFamilyFilters) {
+                console.log(selectedFamilyFilters);
+                $('[data-filter]').find('[data-clear-trigger]').click(function() {
+                    $(this).parents('[data-filter]').find('[data-filter-trigger]').prop('checked',false);
+                    $(this).parents('[data-filter]').find('[data-family-selected]').attr('data-family-selected', 'false');
+                    $('[data-filter-trigger]').trigger('change');
+                });
+                if (products.length > 0) {
+                    products = products.sort(function(a, b) {
+                        if(a.handle < b.handle) { return -1; }
+                        if(a.handle > b.handle) { return 1; }
+                        return 0;
+                    });
+                    for (let i = 0; i < products.length; i++) {
+                        $('[data-filter="products"]').find('.blog-gallery__filter-options')
+                            .append(
+                                    '<div class="blog-gallery__filter-option">'
+                                +   '<input id="'+ products[i].handle + '" type="checkbox" value="' + products[i].handle + '" data-filter-trigger/>'
+                                +   '<label for="'+ products[i].handle + '">'
+                                +    products[i].title
+                                +   '</label>'
+                                +   '</div>');
+                    }
+                    $('[data-filter="products"]').show();
+                }
+                if (colorFamilies.length > 0) {
+                    // console.log('FAMILY SORT');
+                    // console.log(colorFamilies);
+                    colorFamilies = colorFamilies.sort(function(a, b) {
+                        if(a.name < b.name) { return -1; }
+                        if(a.name > b.name) { return 1; }
+                        return 0;
+                    });
+                    for (let i = 0; i < colorFamilies.length; i++) {
+                        var familyAttribute = 'data-family-selected="false"';
+                        console.log(selectedFamilyFilters);
+                        if (selectedFamilyFilters) {
+                            console.log(selectedFamilyFilters);
+                            console.log(colorFamilies[i].name);
+                            if (selectedFamilyFilters.includes(colorFamilies[i].name)) {
+                                familyAttribute = 'data-family-selected="true"';
+                                console.log('true');
+                            } else {
+                                familyAttribute = 'data-family-selected="false"';
+                            }
+                            // for (let j = 0; j < selectedFamilyFilters.length; j++) {
+                            //     if (selectedFamilyFilters[j])
+                            // }
+                        }
+                        console.log(familyAttribute)
+                        $('[data-filter="colors"]').find('.blog-gallery__filter-options')
+                            .append(
+                                    '<div class="blog-gallery__filter-option-group" data-color-family="'
+                                +   colorFamilies[i].name 
+                                +   '"'
+                                +   familyAttribute
+                                +   ' >'
+                                +   '<img class="blog-gallery__filter-option-group-img blog-gallery__filter-option-group-img--family" src="'
+                                +   colorFamilies[i].image
+                                +   '">'
+                                +   '<span class="blog-gallery__family-title" data-color-family-trigger>' + colorFamilies[i].name + '</span>'
+                                +   '<span class="selected-badge">Family Selected</span>'
+                                +   '<i class="fas fa-chevron-right"></i>'
+                                +   '<div class="blog-gallery__filter-option-dropdown" data-color-family-dropdown="'
+                                +   colorFamilies[i].name
+                                +   '">'
+                                +   '<p data-see-all-trigger>'
+                                +   '<img class="blog-gallery__filter-option-group-img blog-gallery__filter-option-group-img--family" color="'
+                                +   colorFamilies[i].name + '" src="'
+                                +   colorFamilies[i].image
+                                +   '">'
+                                +   '<span class="color-family-name">'
+                                +   colorFamilies[i].name
+                                +   '</span>'
+                                +   '<span class="see-all">See All</span></p>'
+                                +   '</div>'
+                                +   '</div>'
+                            );
+                    }
+                }
+                if (productColors.length > 0) {
+                    productColors = productColors.sort(function(a, b) {
+                        if(a.familyColor < b.familyColor) { return -1; }
+                        if(a.familyColor > b.familyColor) { return 1; }
+                        return 0;
+                    });
+                    for (let i = 0; i < productColors.length; i++) {
+                        var initials = 
+                            productColors[i].handle.includes('oil-plus') ? 'OP2C' :
+                            productColors[i].handle.includes('hybrid-wood-protector') ? 'HWP' :
+                        	productColors[i].handle.includes('woodcream') ? 'WC' :
+                            productColors[i].handle.includes('pre-aging') ? 'PA' :
+                            productColors[i].handle.includes('universal-maintenance-oil') ? 'UMO' :
+                            productColors[i].handle.includes('fumed') ? 'Fumed' :
+                            productColors[i].handle.includes('fumed') ? 'Fumed' :
+                            productColors[i].handle.includes('smoke') ? 'Smoke' :
+                            productColors[i].handle.includes('precolor-easy') ? 'PCE' :  productColors[i].handle;
+
+                        $('[data-color-family-dropdown="' + productColors[i].family + '"')
+                            .append(
+                                    '<div class="blog-gallery__filter-option">'
+                                +   '<input data-filter-trigger data-product="'
+                                +   productColors[i].handle
+                                +   '" type="checkbox" id="'
+                                +   productColors[i].name
+                                +   '" value="'
+                                +   productColors[i].name
+                                +   '">'
+                                +   '<label for="'
+                                +   productColors[i].name
+                                +   '">'
+                                +   '<img src="'
+                                +   productColors[i].familyColorImage
+                                +   '">'
+                                +   '<p>'
+                                +   initials
+                                +   '</p>'
+                                +   '<p><b>'
+                                +   productColors[i].familyColor
+                                +   '</b></p>'
+                                +   '</label>'
+                                +   '</div>'
+                        );
+                    }
+                } 
+                if (categories.length > 0) {
+                    categories = categories.sort();
+                    for (let i = 0; i < categories.length; i++) {
+                        $('[data-filter="category"]').find('.blog-gallery__filter-options')
+                            .append(
+                                    '<div class="blog-gallery__filter-option">'
+                                +   '<input id="filter-'+ categories[i] + '" type="checkbox" value="' + categories[i] + '" data-filter-trigger/>'
+                                +   '<label for="filter-'+ categories[i] + '">'
+                                +    categories[i]
+                                +   '</label>'
+                                +   '</div>');
+                    }
+                    $('[data-filter="category"]').show();
+                }
+                if (species.length > 0) {
+                    species = species.sort();
+                    for (let i = 0; i < species.length; i++) {
+                        // console.log(`Adding SPECIE: ${species[i]}`);
+                        $('[data-filter="species"]').find('.blog-gallery__filter-options')
+                            .append(
+                                    '<div class="blog-gallery__filter-option">'
+                                +   '<input id="filter-'+ species[i] + '" type="checkbox" value="' + species[i] + '" data-filter-trigger/>'
+                                +   '<label for="filter-'+ species[i] + '">'
+                                +    species[i]
+                                +   '</label>'
+                                +   '</div>');
+                    }
+                    $('[data-filter="species"]').show();
+                }
+                
+                // console.log('Current Selected Filters:');
+                if (selectedFilters) {
+                    for (var i = 0; i < selectedFilters.length; i++) {
+                        $('[value="' + selectedFilters[i] + '"').prop('checked', true);
+                        // console.log($('[value="' + selectedFilters[i] + '"').length);
+                    }
+                }
+                $('[data-filter-trigger]').change(function() {          
+                    var filteredArticles = allArticles;
+                    var parent = $(this).parents('.blog-gallery__filter-options');
+                    var filters = [];
+                    var familyFilters = []
+                    $('[data-filter-trigger]:checked').each(function () {
+                        filters.push($(this).val());
+                    });
+                    $('[data-family-selected="true"]').each(function () {
+                        var selectedFamily = $(this).attr('data-color-family');
+                        console.log(selectedFamily);
+                        console.log('pushing ' + selectedFamily);
+                        filters.push(selectedFamily);
+                        familyFilters.push(selectedFamily);
+                    });
+                    resetFilters();
+                    console.log(filters)
+                    if (filters.length > 0) {
+                        var initUrlfilter;
+                        for (let i = 0; i < filters.length; i++ ) {
+                            if (i != 0) {
+                                initUrlfilter = initUrlfilter + '&' + filters[i];
+                            } else {
+                                initUrlfilter = filters[i]
+                            }
+                        }
+                        window.history.replaceState("", "", "/blogs/gallery?filters=" + initUrlfilter );
+                    } else {
+                        window.history.replaceState("", "", "/blogs/gallery");
+                    }
+                   
+                    function filterProducts(article) {
+                        // console.log(filters);
+                        // // console.log(`========================${article.title}========================`);
+                        var score = 0;
+                        for (let i = 0; i < filters.length; i++ ) {
+                            // // console.log(`filter--${filters[i]}`);
+                            var filtered = []
+                            if (article.products) {
+                                for (let j = 0; j < article.products.length; j++) {
+                                    // // console.log(article.products[j].handle);
+                                    if (filters[i] === article.products[j].handle && !filtered.includes(article.products[j].handle)) {
+                                        // console.log('true');
+                                        filtered.push(article.products[j].handle);
+                                        score++;
+                                    }
+                                    if (filters[i] === article.products[j].color && !filtered.includes(article.products[j].color)) {
+                                        // // console.log('true');
+                                        filtered.push(article.products[j].color);
+                                        score++;
+                                    }
+                                    if (article.products[j].family) {
+                                        if (filters[i] === article.products[j].family && !filtered.includes(article.products[j].family)) {
+                                            console.log('true');
+                                            filtered.push(article.products[j].family);
+                                            score++;
+                                        }
+                                    }
+                                    // if (filters[i] === article.products[j].species && !filtered.includes(article.products[j].species)) {
+                                    //     // console.log('true');
+                                    //     filtered.push(article.products[j].species);
+                                    //     score++;
+                                    // }
+                                }
+                            }
+                            if (article.categories) {
+                                for (let j = 0; j < article.categories.length; j++) {
+                                    if (filters[i] === article.categories[j] && !filtered.includes(article.categories[j])) {
+                                        // // console.log('true');
+                                        filtered.push(article.categories);
+                                        score++;
+                                    }
+                                }
+                            }
+                            if (article.species) {
+                                for (let j = 0; j < article.species.length; j++) {
+                                    if (filters[i] === article.species[j] && !filtered.includes(article.species[j])) {
+                                        // // console.log('true');
+                                        filtered.push(article.species[j]);
+                                        score++;
+                                    }
+                                }
+                            }
+                        }
+                        // // console.log(`total score = ${score}`);
+                        // // console.log(`filter length = ${filters.length}`);
+                        
+                        // console.log('===============================================================');
+                        if (score == filters.length) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    filteredArticles = filteredArticles.filter(filterProducts);
+
+                    appendItems(filteredArticles);
+                    console.log(familyFilters);
+                    console.log('here');
+                    // console.log(filteredArticles)
+                    getFilters(filteredArticles, filters);
+                    initFilter(filters, familyFilters);
+                });
+                if($(window).width() <= 1024){
+                    $('.blog-gallery__filter-option-group').click(function(e) {
+                        e.stopPropagation();
+                        if ($(this).hasClass('blog-gallery__filter-option-group--active')) {
+                            $(this).removeClass('blog-gallery__filter-option-group--active');
+                        } else {
+                            $('.blog-gallery__filter-option-group').not(this).removeClass('blog-gallery__filter-option-group--active');
+                            $(this).addClass('blog-gallery__filter-option-group--active');
+                        }
+                    });
+                }
+                
+                if($(window).width() >= 1024){
+                    $('[data-color-family]').find('[data-color-family-trigger]').click(function() {
+                        $(this).parent('[data-color-family]').attr('data-family-selected', function(index, attr) {
+                        // console.log(attr);
+                        return attr == "true" ? false : true;});
+                        
+                        $('[data-filter-trigger]').trigger('change');
+                    });
+                }
+                $('[data-see-all-trigger]').click(function() {
+                    $(this).parents('[data-color-family]').attr('data-family-selected', function(index, attr) {
+                    // console.log(attr);
+                    return attr == "true" ? false : true;});
+                    $('[data-filter-trigger]').trigger('change');
+                });
+ 
+            }
+            function appendItems(articles) {
+                articles = articles ? articles : responseJson.articles;
+                let items = '';
+                for (let i = 0; i < articles.length; i++) {
+                    let item = blogItemTemplate
+                        .replace(/{image}/g, articles[i].image)
+                        .replace(/{title}/g, articles[i].title)
+                        .replace(/{url}/g, articles[i].url)
+                        .replace(/{location}/g, articles[i].location);
+                        items += item;
+                }
+                $('[data-gallery-grid]').empty();
+                $('[data-gallery-grid]').append(items);
+            }
+            
+            Object.entries(getArticlesResponses).forEach(([key, value]) => {
+              console.log(Number(key), value)
+              if (key === 1) {
+                      $('[data-filter]').find('.blog-gallery__filter-options').empty();
+                      $('[data-filter]').find('.blog-gallery__filter-options').append('<p class="blog-gallery__clear" data-clear-trigger>Clear All</p>');
+
+                  }
+
+                  getFilters(null, null, key);
+
+                  allArticles = allArticles.concat(value.articles);
+            })
+
+
+            initFilter();
+            function getParameterByName(name, url) {
+                if (!url) url = window.location.href.replaceAll('&', ',');
+                name = name.replace(/[\[\]]/g, '\\$&');
+                var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, ' '));
+            }
+            var filters = getParameterByName('filters');
+
+            filters = filters.split(',');
+            if (filters.length > 0) {
+                for (var i = 0; i < filters.length; i++) {
+                    if ($('#' + filters[i]).length > 0) {
+                        $('#' + filters[i]).prop('checked', true);
+                    } else {
+                        if ($('[value="' + filters[i] + '"]').length > 0) {
+                            $($('[value="' + filters[i] + '"]')).prop('checked', true);
+                        } else {
+                            $($('[color="' + filters[i] + '"]')).click();
+                        }
+                    }
+                }
+                if ($('#' + filters[0]).length > 0) {
+                    $('#' + filters[0]).trigger('change');
+                } else {
+                    $('#filter-' + filters[0]).trigger('change');
+                }
+
+            }
+        });
+        if($(window).width() <= 1024){
+            $('.blog-gallery__filter').click(function(e) {
+                if($(this).hasClass('blog-gallery__filter--active')) {
+                    $(this).removeClass('blog-gallery__filter--active');
+                } else {
+                    $('.blog-gallery__filter').each(function() {
+                        $(this).removeClass('blog-gallery__filter--active');
+                    });
+                    $(this).addClass('blog-gallery__filter--active');
+                }
+                
+            });
+        }
+    });
+</script>
+
+{% schema %}
+    {
+        "name": "Blog Gallery",
+        "settings": [
+            {
+              "type": "range",
+              "id": "pagination_size",
+              "min": 9,
+              "max": 24,
+              "step": 3,
+              "label": "Projects to show",
+              "default": 15
+            }
+            
+        ]
+    }
+{% endschema %}

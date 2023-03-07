@@ -1,0 +1,276 @@
+<!-- CSS -->
+<link rel="stylesheet" href="https://unpkg.com/flickity@2/dist/flickity.min.css">
+<!-- JavaScript -->
+<script src="https://unpkg.com/flickity@2/dist/flickity.pkgd.min.js"></script>
+<section class="plug-article">
+  <div class="heading-wrapper--page
+              heading-wrapper
+              heading-wrapper--short
+              one-whole column
+              is-flex
+              is-flex-column
+              is-align-center
+              text-align-center" style="margin-top: 40px;">
+  <h1 class="page__title title">{{ article.title }}</h1> <div class="heading-divider heading-divider--short"></div></div>
+  <div class="section__wrapper section">
+    <div class="breadcrumb__wrapper">
+      {% render 'breadcrumb', context: 'article' %}
+    </div>
+  </div>
+
+  {% if article.metafields.custom_fields["gallery"] != blank %}
+    {% assign separator = "|###|" %}
+    {% assign desktop_image_array = article.metafields.custom_fields["desktop_image"] | split: separator %}
+    {% assign image_alt_array = article.metafields.custom_fields["image_alt"] | split: separator %}
+    {% assign mobile_image_array = article.metafields.custom_fields["mobile_image"] | split: separator %}
+    {% assign mobile_image_alt_array = article.metafields.custom_fields["mobile_image_alt"] | split: separator %}
+    {% assign fc_keys = article.metafields.custom_fields["gallery"] | split: "," %}
+    <div data-article-slider class="plug-article__slider" data-length="{{ fc_keys.size }}">
+      {% for i in fc_keys %}
+        {% assign index = i | plus: 0 %}
+        <div class="plug-article__slide" data-fancybox="gallery-image" href="{{ desktop_image_array[index] | replace: '.png', '_2000x.png' }}" data-aspect-ratio="{{ desktop_image_array[index].aspect-ratio }}">
+          {% include 'customImage', image: desktop_image_array[index], alt: image_alt_array[index] %}
+        </div>
+      {% endfor %}
+    </div>
+     <script>
+        $(document).ready(function() {
+            function initArticleSlider () {
+              var screenWidth = screen.width;
+              var totalImageSlideWidth = 0;
+              $('.plug-article__slide').find('img').each(function() {
+                totalImageSlideWidth = totalImageSlideWidth + $(this).width();
+              });
+              console.log(totalImageSlideWidth);
+              console.log(screenWidth);
+              if (totalImageSlideWidth > screenWidth) {
+                var flkty = new Flickity( '[data-article-slider]', {
+                  wrapAround: true,
+                  contain: true,
+                  imagesLoaded: true,
+                  percentPosition: false,
+                  fullscreen: true
+                });
+                var el = document.querySelector('[data-article-slider]');
+                var slideImages = el.querySelectorAll('img');
+                for (i = 0; i < slideImages.length; i++) {
+                  slideImages[i].addEventListener('load', function() {
+                    console.log('resize');
+                    flkty.resize();
+                  });
+                }
+              }
+            }
+            
+            $(window).resize(function(){
+              initArticleSlider();
+            });
+            initArticleSlider();
+            setTimeout(function(){initArticleSlider(); }, 100);
+            setTimeout(function(){initArticleSlider(); }, 300);
+            setTimeout(function(){initArticleSlider(); }, 500);
+            setTimeout(function(){initArticleSlider(); }, 1000);
+      });
+     </script>
+    {% comment %}
+    <div class="plug-article__slider medium-up--hide" data-flickity='{ "wrapAround": true, "contain": true, "imagesLoaded": true, "prevNextButtons": false }'>
+      {% for i in fc_keys %}
+        {% assign index = i | plus: 0 %}
+        <div class="plug-article__slide" data-fancybox="plug-article__slide--mobile" href="{{ mobile_image_array[index] | replace: '.png', '_2000x.png' }}" >
+          <img data-src="{{ mobile_image_array[index] }}" alt="{{ mobile_image_alt_array[index] }}" class="lazyload">
+        </div>
+      {% endfor %}
+    </div>
+    {% endcomment %}
+  {% endif %}
+
+  <div class="plug-article__information">
+    <div class="plug-article__information-heading">
+      <h2>Project Information</h2>
+      <div class="blog-share">
+      	{% render 'social-share-buttons', context: 'article' %}
+      </div>
+    </div>
+    <div class="plug-article__information-content">
+      {% if article.metafields.custom_fields["year"] %} <p><b>Year: </b> {{ article.metafields.custom_fields["year"] }}</p> {% endif %}
+      {% if article.metafields.custom_fields["location"] %} <p><b>Location: </b> {{ article.metafields.custom_fields["location"] }}</p> {% endif %}
+      {% if article.metafields.custom_fields["designers"] != blank %}
+        {% assign separator = "|###|" %}
+        {% assign designer_name_array = article.metafields.custom_fields["designer-name"] | split: separator %}
+        {% assign designer_link_array = article.metafields.custom_fields["designer_link"] | split: separator %}
+        {% assign fc_keys = article.metafields.custom_fields["designers"] | split: "," %}
+          <div class="custom-field__photographer custom-field__type--field-collection">
+            <p>
+              <b>Design: </b> 
+              {% for i in fc_keys %}
+                {% assign index = i | plus: 0 %}
+                {% unless index == 0 or designer_name_array[index] == " " or designer_name_array[index] == "" %}
+                ,
+                {% endunless %}
+                {% capture designers %}
+                  {% unless designer_name_array[index] == blank %}
+                    {% if designer_link_array[index] != blank %}
+                      <a href="{{ designer_link_array[index] }}" rel="noopener">{{ designer_name_array[index] | newline_to_br }}</a>
+                    {% else %}
+                      {{ designer_name_array[index] | newline_to_br }}
+                    {% endif %}
+                  {% endunless %}
+                {% endcapture %}
+                <span style="margin-right: -4px">{{ designers | strip | newline_to_br | strip_newlines}}</span>
+              {% endfor %}
+            </p>
+          </div>
+      {% endif %}
+      {% if article.metafields.custom_fields["contractors"] != blank %}
+        {% assign separator = "|###|" %}
+        {% assign contractor_name_array = article.metafields.custom_fields["contractor_name"] | split: separator %}
+        {% assign contractor_link_array = article.metafields.custom_fields["contractor_link"] | split: separator %}
+        {% assign fc_keys = article.metafields.custom_fields["contractors"] | split: "," %}
+          <div class="custom-field__photographer custom-field__type--field-collection">
+            <p>
+              <b>Contractor: </b> 
+              {% for i in fc_keys %}
+                {% assign index = i | plus: 0 %}
+                {% unless index == 0 %}
+                  ,
+                {% endunless %}
+                
+                {% unless contractor_name_array[index] == blank %}
+                  {% if contractor_link_array[index] != blank %}
+                    <span style="margin-right: -4px"><a {% if contractor_link_array[index] != blank %}href="{{ contractor_link_array[index] }}" rel="noopener"{% endif %}>{{ contractor_name_array[index] | strip | strip_newlines }}</a></span>
+                  {% else %}
+                    <span style="margin-right: -4px">{{ contractor_name_array[index] | strip | strip_newlines }}</span>
+                  {% endif %}
+                {% endunless %}
+              {% endfor %}
+            </p>
+          </div>
+      {% endif %}
+      {% if article.metafields.custom_fields["photographers"] != blank %}
+        {% assign separator = "|###|" %}
+        {% assign photographer_name_array = article.metafields.custom_fields["photographer_name"] | split: separator %}
+        {% assign photographer_link_array = article.metafields.custom_fields["photographer_link"] | split: separator %}
+        {% assign fc_keys = article.metafields.custom_fields["photographers"] | split: "," %}
+        <div class="custom-field__photographer custom-field__type--field-collection">
+          <p>
+            <b>Photography: </b> 
+            
+            {% for i in fc_keys %}
+              {% assign index = i | plus: 0 %}
+              {% unless index == 0 %}
+                ,
+              {% endunless %}
+              {% unless photographer_name_array[index] == blank %}
+                {% if photographer_link_array[index] != blank %}
+                  <span style="margin-right: -4px"><a {% if photographer_link_array[index] != blank %}href="{{ photographer_link_array[index] }}" rel="noopener"{% endif %}>{{ photographer_name_array[index] | strip }}</a></span>
+                {% else %}
+                  <span style="margin-right: -4px">{{ photographer_name_array[index] | strip }}</span>
+                {% endif %}
+              {% endunless %}
+            {% endfor %}
+          </p>
+        </div>
+      {% endif %}
+      {% if article.metafields.custom_fields["species"] != blank %}
+            {% assign separator = "|###|" %}
+            {% assign specie_array = article.metafields.custom_fields["specie"] | split: separator %}
+            {% assign specie_url_array = article.metafields.custom_fields["specie_url"] | split: separator %}
+            {% assign fc_keys = article.metafields.custom_fields["species"] | split: "," %}
+            <div class="custom-field custom-field__species custom-field__type--field-collection">
+              <p>
+                <b>Species: </b>
+                {% for i in fc_keys %}
+                  {% assign index = i | plus: 0 %}
+                  {% unless forloop.first %}, {% endunless %}
+                  <span {% if specie_url_array[index] != blank %}href="{{ specie_url_array[index] }}" {% endif %}>{{ specie_array[index] }}</span>
+                {% endfor %}
+            </p>
+          </div>
+      {% endif %}
+      <div class="plug-article__products">
+        {% if article.metafields.custom_fields["products"] != blank %}
+            {% assign product_array = article.metafields.custom_fields["product"] | split: separator %}
+            {% assign product_color_array = article.metafields.custom_fields["product-color"] | split: separator %}
+            {% assign species_array = article.metafields.custom_fields["species"] | split: separator %}
+            {% assign color_link_array = article.metafields.custom_fields["color_link"] | split: separator %}
+            {% assign link_array = article.metafields.custom_fields["link"] | split: separator %}
+            {% assign fc_keys = article.metafields.custom_fields["products"] | split: "," %}
+          {% if product_array != blank %}
+          <div class="plug-article__product">
+            <p><b>Product: </b></p>
+          </div>
+              {% assign separator = "|###|" %}
+              
+              {% assign values = '' %}
+              {% for i in fc_keys %}
+                {% assign index = i | plus: 0 %}
+                {% if product_array[index] != blank %}
+                  {% assign handle = product_array[index] %}
+                  {% unless values contains handle %}
+                    {% assign values = values | join: ',' %}
+                    {% assign values = values | append: ',' | append: handle %} 
+                    {% assign values = values | split: ',' %}
+                    {% assign product = all_products[handle] %}
+                    <div class="plug-article__product">
+                      <a href="{% if link_array[index] != blank %}{{link_array[index]}}{% else %}{{ product.url }}{% endif %}">
+                        <img data-src="{{ product.featured_image | img_url: '400'}}" class="lazyload">
+                        <p><b>{{ product.title }}</b></p>
+                      </a>
+                      <div class="product-article__swatches">
+                        {% for j in fc_keys %}
+                          {% assign colorIndex = j | plus: 0 %}
+                          {% if product_array[index] == product_array[colorIndex] %}
+                            {% assign currentProduct = product_array[index] | strip | handleize %}
+                            {% if currentProduct contains 'oil-plus' %}
+                              {% assign currentProduct = 'oil-plus-2c' | strip | handleize %}
+                            {% endif %}
+                            {% assign currentColor = product_color_array[colorIndex] | replace: '%', '-percent'| strip | handleize %}
+
+                            {% if species_array[colorIndex] != blank or species_array[colorIndex] != ' ' %}
+                              {% assign currentSpecie = species_array[colorIndex] | strip | handleize %}
+                            {% else %}
+                              {% assign currentSpecie = "White Oak" | strip | handleize %}
+                            {% endif %}
+                            {% if currentSpecie == blank %}
+                              {% assign currentSpecie = "White Oak" | strip | handleize %}
+                            {% endif %}
+                            {% assign currentSpecie = "White Oak" | strip | handleize %}
+                            {% for item in shop.metafields.custom_fields["specie_default_swatch"] %}
+                                {% if item["specie"] != blank and item["product"] != blank %}
+                                    {% assign product_target = item["product"] | handleize %}
+                                    {% if currentProduct contains item["product"] %}
+                                        {% assign currentSpecie = item["specie"] | strip | handleize %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {% assign imgSrc = currentProduct | append: '_' | append: currentSpecie | append: '_' | append: currentColor | append: '.jpg' %}
+                            {% assign colorPage = currentProduct | append: "-colors" %}
+                            {% unless product_color_array[colorIndex] == blank %}
+                              <a class="plug-article__product-colors-swatch" {% if pages[colorPage].url != blank %} href="{{ pages[colorPage].url}}" {% endif %} title="{{ product_color_array[colorIndex] }}">
+                                <img class="plug-article__product-colors lazyload" data-src="{{ imgSrc | file_img_url: '100x' }}">
+                                <br><span class="plug-article__product-swatch-titles">{{ product_color_array[colorIndex] }}</span>
+                              </a>
+                            {% endunless %}
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endunless %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% if article.content != blank %}
+      <div class="plug-article__information-heading">
+        <h2>Description</h2>
+      </div>
+      <div class="plug-article__information-content">
+        {{ article.content }}
+      </div>
+    {% endif %}
+    {% render "custom_fields.articles.blog_cta" %}
+    <a class="plug-return-gallery" href="/blogs/gallery"><span>&lsaquo;</span>  Return to Gallery</a>
+  </div>
+</section>

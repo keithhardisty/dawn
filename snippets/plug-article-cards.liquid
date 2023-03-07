@@ -1,0 +1,17 @@
+{% for article in blog.articles %}
+    <div class="gallery-card">
+        <a href="{{ article.url }}">
+            {% if article.metafields.custom_fields["article_image"] != blank %}
+                <img src="{{ article.metafields.custom_fields['article_image'] | replace: '.png', '_2000x.png' }}">
+            {% else %}
+                <img src="{{ article.image.src | img_url: '2000x' }}">
+            {% endif %}
+            <h2>{{ article.title }}</h2>
+            {% if article.metafields.custom_fields["location"] != blank %}
+                <div class="gallery-card__location">
+                    {{ article.metafields.custom_fields["location"] }}
+                </div>
+            {% endif %}
+        </a>
+    </div>
+{% endfor %}

@@ -1,0 +1,45 @@
+{
+    "sections": {
+      "main": {
+        "type": "plug-blog-gallery",
+        "settings": {
+          "pagination_size": 15
+        }
+      },
+      "16354527492b2a3772": {
+        "type": "index__rich-text",
+        "settings": {
+          "title": "Want your Rubio Monocoat project featured?",
+          "heading_font": "helvetica_n7",
+          "heading_color": "#183029",
+          "heading_alignment": "center",
+          "heading_size": 30,
+          "text": "",
+          "text_font": "open_sans_n4",
+          "text_color": "rgba(0,0,0,0)",
+          "text_alignment": "left",
+          "text_size": 14,
+          "columns": 1,
+          "button_label": "Submit a project",
+          "button_link": "shopify:\/\/pages\/project-submission",
+          "button_alignment": "center",
+          "button_style": "button--primary",
+          "background": "#f2f2f2",
+          "gradient": "rgba(0,0,0,0)",
+          "gradient_rotation": 180,
+          "width": "standard",
+          "padding_top": 40,
+          "padding_bottom": 40,
+          "padding_left": 0,
+          "padding_right": 0,
+          "animation": "none",
+          "css_class": "is-rounded",
+          "custom_css": ".card-content {\n    padding: 5.5rem .5rem;\n}"
+        }
+      }
+    },
+    "order": [
+      "main",
+      "16354527492b2a3772"
+    ]
+  }
